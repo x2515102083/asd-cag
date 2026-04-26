@@ -8,10 +8,36 @@ export PYTHONPATH="$PWD/src:${PYTHONPATH:-}"
 mkdir -p outputs/logs outputs/repro_abide1
 
 SITES=(Trinity KKI SBL OHSU Caltech)
+RUNTIME_CONFIG_DIR="outputs/repro_abide1/runtime_configs"
+RUNTIME_OUTPUT_ROOT="outputs/repro_abide1/runtime_outputs/abide1"
+RUNTIME_CHECKPOINT_ROOT="outputs/repro_abide1/runtime_checkpoints/abide1"
+PAPER_CONFIG="${RUNTIME_CONFIG_DIR}/cag_abide1_paper.yaml"
+EXTERNAL_CONFIG="${RUNTIME_CONFIG_DIR}/cag_abide1_external_best.yaml"
+
+mkdir -p "${RUNTIME_CONFIG_DIR}" "${RUNTIME_OUTPUT_ROOT}" "${RUNTIME_CHECKPOINT_ROOT}"
+
+python - <<'PY'
+from pathlib import Path
+import yaml
+
+runtime_config_dir = Path("outputs/repro_abide1/runtime_configs")
+runtime_config_dir.mkdir(parents=True, exist_ok=True)
+
+for src_name, dst_name in [
+    ("configs/cag_abide1_paper.yaml", "cag_abide1_paper.yaml"),
+    ("configs/cag_abide1_external_best.yaml", "cag_abide1_external_best.yaml"),
+]:
+    src = Path(src_name)
+    cfg = yaml.safe_load(src.read_text()) or {}
+    cfg.setdefault("training", {})
+    cfg["training"]["output_dir"] = "outputs/repro_abide1/runtime_outputs/abide1"
+    cfg["training"]["checkpoint_dir"] = "outputs/repro_abide1/runtime_checkpoints/abide1"
+    (runtime_config_dir / dst_name).write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
+PY
 
 echo "=== Paper alignment check ===" | tee outputs/logs/repro_abide1_master.log
 python scripts/check_paper_alignment.py \
-  --config configs/cag_abide1_paper.yaml \
+  --config "${PAPER_CONFIG}" \
   --subjects_csv data/abide1/subjects.csv \
   --fc_dir data/abide1/fc \
   2>&1 | tee -a outputs/logs/repro_abide1_master.log
@@ -22,7 +48,7 @@ for site in "${SITES[@]}"; do
   echo "=== Running site ${site}, paper default 1/1/10 ===" | tee -a outputs/logs/repro_abide1_master.log
 
   python -u scripts/train_abide1.py \
-    --config configs/cag_abide1_paper.yaml \
+    --config "${PAPER_CONFIG}" \
     --subjects_csv data/abide1/subjects.csv \
     --fc_dir data/abide1/fc \
     --test_site "${site}" \
@@ -43,8 +69,8 @@ for site in "${SITES[@]}"; do
     2>&1 | tee "outputs/logs/train_${site}_paper_1_1_10_ep50.log"
 
   rm -rf "outputs/abide1/${site}_paper_1_1_10" "checkpoints/abide1/${site}_paper_1_1_10"
-  cp -r "outputs/abide1/${site}" "outputs/abide1/${site}_paper_1_1_10"
-  cp -r "checkpoints/abide1/${site}" "checkpoints/abide1/${site}_paper_1_1_10"
+  cp -r "${RUNTIME_OUTPUT_ROOT}/${site}" "outputs/abide1/${site}_paper_1_1_10"
+  cp -r "${RUNTIME_CHECKPOINT_ROOT}/${site}" "checkpoints/abide1/${site}_paper_1_1_10"
 
   echo "=== Summary ${site} paper 1/1/10 ===" | tee -a outputs/logs/repro_abide1_master.log
   cat "outputs/abide1/${site}_paper_1_1_10/summary.json" | tee -a outputs/logs/repro_abide1_master.log
@@ -53,7 +79,7 @@ done
 echo "=== Caltech Fig.4 external-best 10/100/10 sanity run ===" | tee -a outputs/logs/repro_abide1_master.log
 
 python -u scripts/train_abide1.py \
-  --config configs/cag_abide1_external_best.yaml \
+  --config "${EXTERNAL_CONFIG}" \
   --subjects_csv data/abide1/subjects.csv \
   --fc_dir data/abide1/fc \
   --test_site Caltech \
@@ -74,8 +100,8 @@ python -u scripts/train_abide1.py \
   2>&1 | tee outputs/logs/train_Caltech_external_best_10_100_10_ep50.log
 
 rm -rf outputs/abide1/Caltech_external_best_10_100_10 checkpoints/abide1/Caltech_external_best_10_100_10
-cp -r outputs/abide1/Caltech outputs/abide1/Caltech_external_best_10_100_10
-cp -r checkpoints/abide1/Caltech checkpoints/abide1/Caltech_external_best_10_100_10
+cp -r "${RUNTIME_OUTPUT_ROOT}/Caltech" outputs/abide1/Caltech_external_best_10_100_10
+cp -r "${RUNTIME_CHECKPOINT_ROOT}/Caltech" checkpoints/abide1/Caltech_external_best_10_100_10
 
 echo "=== Final summaries ===" | tee -a outputs/logs/repro_abide1_master.log
 for d in outputs/abide1/*_paper_1_1_10 outputs/abide1/Caltech_external_best_10_100_10; do
