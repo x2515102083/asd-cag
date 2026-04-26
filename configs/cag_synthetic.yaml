@@ -1,0 +1,33 @@
+data:
+  subjects_csv: data/synthetic_abide/subjects.csv
+  fc_dir: data/synthetic_abide/fc
+
+model:
+  hidden_dim: 32
+  n_layers: 2
+  dropout: 0.2
+  n_env: 2
+  mask_type: node
+  temperature: 1.0
+  lambda_e1: 50.0
+  lambda_e2: 20.0
+  lambda_s: 5.0
+  use_le1: true
+  use_le2: true
+  use_ls: true
+
+training:
+  lr: 0.0001
+  weight_decay: 0.0
+  batch_size: 4
+  epochs: 2
+  seed: 42
+  device: auto
+  num_workers: 0
+  output_dir: outputs/synthetic
+  checkpoint_dir: checkpoints/synthetic
+  n_splits: 2
+  test_site: SITE_02
+
+evaluation:
+  threshold: 0.5
