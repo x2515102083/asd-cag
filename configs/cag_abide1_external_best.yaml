@@ -10,8 +10,8 @@ model:
   n_env: 2
   mask_type: node
   temperature: 1.0
-  lambda_e1: 1.0
-  lambda_e2: 1.0
+  lambda_e1: 10.0
+  lambda_e2: 100.0
   lambda_s: 10.0
   use_le1: true
   use_le2: true

@@ -80,5 +80,14 @@ The extractor loads a checkpoint, accumulates ASD subject node-mask probabilitie
 - The default graph uses full `n x n` adjacency as in the paper. With CC400 data this is about 153k directed edges per subject, so reduce `batch_size` on memory-limited GPUs if needed.
 - The paper's default CAG path masks nodes with Gumbel-Sigmoid. `edge` and `node_edge` mask types are available as ablations, but the default config uses `node`.
 - Pseudo environment labels are refreshed at the beginning of each epoch by k-means on causal graph embeddings from the training loader.
-- Loss terms are optimized as positive focal/CE losses while Gradient Reversal Layers apply the adversarial lambdas internally.
+- Loss terms are optimized as positive losses while Gradient Reversal Layers apply the adversarial lambdas internally.
 - The code does not alter, delete, rename, or move data.
+
+## Paper Alignment Notes
+
+- The English paper default CAG lambdas are `lambda_e1=1`, `lambda_e2=1`, and `lambda_s=10`; this is the default in `configs/cag_abide1.yaml` and `configs/cag_abide1_paper.yaml`.
+- Fig. 4 external best uses `lambda_e1=10`, `lambda_e2=100`, and `lambda_s=10`; use `configs/cag_abide1_external_best.yaml` for that sanity run.
+- `configs/cag_abide1_legacy_50_20_5.yaml` preserves the old `50/20/5` setting only for reproducing previous local experiments.
+- The paper ABIDE-I count is `ASD=486`, `TDC=531`, `total=1017`. If the local `subjects.csv` reports 1035 subjects, that dataset does not exactly match the paper ABIDE-I cohort.
+- `Ls` uses `BCEWithLogitsLoss` semantics with a single spurious logit. The causal classifier still uses two-class softmax probabilities for evaluation.
+- ABIDE-II reproduction and complete biomarker statistics remain full-reproduction TODOs.

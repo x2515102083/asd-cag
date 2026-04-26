@@ -32,9 +32,9 @@ def make_model(n_nodes: int, config: dict[str, Any]) -> CAGModel:
         n_layers=int(config.get("n_layers", 2)),
         dropout=float(config.get("dropout", 0.2)),
         n_env=int(config.get("n_env", 2)),
-        lambda_e1=float(config.get("lambda_e1", 50.0)),
-        lambda_e2=float(config.get("lambda_e2", 20.0)),
-        lambda_s=float(config.get("lambda_s", 5.0)),
+        lambda_e1=float(config.get("lambda_e1", 1.0)),
+        lambda_e2=float(config.get("lambda_e2", 1.0)),
+        lambda_s=float(config.get("lambda_s", 10.0)),
         mask_type=str(config.get("mask_type", "node")),
         temperature=float(config.get("temperature", 1.0)),
     )
@@ -104,7 +104,7 @@ def train_one_epoch(
         loss_c = focal(outputs["logits_c"], y)
         loss_e1 = F.cross_entropy(outputs["logits_env1"], eps)
         loss_e2 = F.cross_entropy(outputs["logits_env2"], eps)
-        loss_s = F.cross_entropy(outputs["logits_s"], y)
+        loss_s = F.binary_cross_entropy_with_logits(outputs["logits_s"].view(-1), y.float())
         loss = loss_c
         if use_le1:
             loss = loss + loss_e1
@@ -190,9 +190,10 @@ def train_fold(
     use_le1 = bool(config["model"].get("use_le1", True))
     use_le2 = bool(config["model"].get("use_le2", True))
     use_ls = bool(config["model"].get("use_ls", True))
-    lambda_e1 = float(config["model"].get("lambda_e1", 50.0))
-    lambda_e2 = float(config["model"].get("lambda_e2", 20.0))
-    lambda_s = float(config["model"].get("lambda_s", 5.0))
+    lambda_e1 = float(config["model"].get("lambda_e1", 1.0))
+    lambda_e2 = float(config["model"].get("lambda_e2", 1.0))
+    lambda_s = float(config["model"].get("lambda_s", 10.0))
+    n_splits = int(config["training"].get("n_splits", 10))
 
     print(f"\nFold {fold_idx}: test_site={test_site}, use_le1={use_le1}, use_le2={use_le2}, use_ls={use_ls}, lambda_e1={lambda_e1}, lambda_e2={lambda_e2}, lambda_s={lambda_s}, device={device}")
 
@@ -268,7 +269,7 @@ def train_fold(
         }
         history.append(row)
 
-        print(f"Fold {fold_idx}/{n_epochs} Epoch {epoch}/{n_epochs} loss={train_metrics['loss']:.4f} Lc={train_metrics['Lc']:.4f} Le1={train_metrics['Le1']:.4f} Le2={train_metrics['Le2']:.4f} Ls={train_metrics['Ls']:.4f} val_AUC={val_metrics['AUC']:.4f} cluster=[{cluster_0_count},{cluster_1_count}] mask_mean={train_metrics['mask_mean']:.4f} emb_gc_std={train_metrics['emb_gc_std']:.4f}", flush=True)
+        print(f"Fold {fold_idx}/{n_splits} Epoch {epoch}/{n_epochs} loss={train_metrics['loss']:.4f} Lc={train_metrics['Lc']:.4f} Le1={train_metrics['Le1']:.4f} Le2={train_metrics['Le2']:.4f} Ls={train_metrics['Ls']:.4f} val_AUC={val_metrics['AUC']:.4f} cluster=[{cluster_0_count},{cluster_1_count}] mask_mean={train_metrics['mask_mean']:.4f} emb_gc_std={train_metrics['emb_gc_std']:.4f}", flush=True)
 
         current_auc = val_metrics["AUC"]
         if not math.isnan(current_auc) and current_auc > best_auc:

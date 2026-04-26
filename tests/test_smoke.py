@@ -52,13 +52,13 @@ def test_dataset_forward_training_step_and_metrics(tmp_path: Path) -> None:
     model = CAGModel(n_nodes=8, hidden_dim=16, n_layers=2, dropout=0.1, n_env=2)
     outputs = model(batch)
     assert outputs["logits_c"].shape == (4, 2)
-    assert outputs["logits_s"].shape == (4, 2)
+    assert outputs["logits_s"].shape == (4, 1)
     assert outputs["logits_env1"].shape == (4, 2)
     assert outputs["logits_env2"].shape == (4, 2)
     assert outputs["mask"].shape == (4 * 8,)
 
     optimizer = AdamW(model.parameters(), lr=1e-3)
-    pseudo_env = build_pseudo_env_labels(model, loader, n_env=2, seed=7, device=torch.device("cpu"))
+    pseudo_env, _, _, _ = build_pseudo_env_labels(model, loader, n_env=2, seed=7, device=torch.device("cpu"))
     train_metrics = train_one_epoch(model, loader, optimizer, pseudo_env, device=torch.device("cpu"))
     assert train_metrics["loss"] > 0.0
 

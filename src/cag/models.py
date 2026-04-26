@@ -105,9 +105,9 @@ class CAGModel(nn.Module):
         n_layers: int = 2,
         dropout: float = 0.2,
         n_env: int = 2,
-        lambda_e1: float = 50.0,
-        lambda_e2: float = 20.0,
-        lambda_s: float = 5.0,
+        lambda_e1: float = 1.0,
+        lambda_e2: float = 1.0,
+        lambda_s: float = 10.0,
         mask_type: str = "node",
         temperature: float = 1.0,
     ) -> None:
@@ -132,7 +132,7 @@ class CAGModel(nn.Module):
         self.classifier = nn.Linear(hidden_dim, 2)
         self.env1_head = nn.Linear(hidden_dim, n_env)
         self.env2_head = nn.Linear(hidden_dim, n_env)
-        self.spurious_head = nn.Linear(hidden_dim, 2)
+        self.spurious_head = nn.Linear(hidden_dim, 1)
 
     def forward(self, batch) -> dict[str, torch.Tensor | None]:
         filtered_x = self.filter(batch.x)
